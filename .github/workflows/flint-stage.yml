@@ -1,0 +1,46 @@
+name: Flint Windows build stage
+on:
+  workflow_call:
+    inputs:
+      resume:
+        type: boolean
+        required: true
+    outputs:
+      finished:
+        value: ${{ jobs.compile.outputs.finished }}
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: windows-2022
+    outputs:
+      finished: ${{ steps.stage.outputs.finished }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ungoogled-software/ungoogled-chromium-windows
+          ref: 76a692e3e39e1456e4691e7d9de28d32de1cdd87
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          path: ungoogled-chromium
+          persist-credentials: false
+      - name: Add the Flint patches to the Windows build
+        shell: pwsh
+        run: |
+          $root = 'ungoogled-chromium'
+          if ((Get-Content "$root/chromium_version.txt" -Raw).Trim() -ne '158.0.8127.36') { throw 'Update the Windows packaging revision for this Chromium version.' }
+          Expand-Archive "$root/docs/Flint-architecture-and-patches.zip" "$env:RUNNER_TEMP/flint-kit"
+          $patches = '01-user-install.patch', '02-brand-and-credits.patch', '04-obsidian-base.patch'
+          New-Item -ItemType Directory "$root/patches/flint" | Out-Null
+          foreach ($patch in $patches) {
+            Copy-Item "$env:RUNNER_TEMP/flint-kit/patches/$patch" "$root/patches/flint/"
+            Add-Content "$root/patches/series" "flint/$patch"
+          }
+      - uses: ./.github/actions/prepare
+      - name: Compile or resume and package Windows x64
+        id: stage
+        uses: ./.github/actions/stage
+        with:
+          finished: 'false'
+          from_artifact: ${{ inputs.resume }}
