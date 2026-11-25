@@ -1,0 +1,211 @@
+--- a/chrome/browser/themes/theme_service.cc
++++ b/chrome/browser/themes/theme_service.cc
+@@ -321,7 +321,7 @@
+   registry->RegisterIntegerPref(themes::kPolicyThemeColor, SK_ColorTRANSPARENT);
+   registry->RegisterIntegerPref(
+       prefs::kBrowserColorScheme,
+-      std::to_underlying(ThemeService::BrowserColorScheme::kSystem));
++      std::to_underlying(ThemeService::BrowserColorScheme::kDark));
+   registry->RegisterIntegerPref(prefs::kUserColor, SK_ColorTRANSPARENT);
+   registry->RegisterIntegerPref(
+       prefs::kBrowserColorVariant,
+--- a/chrome/browser/ui/color/chrome_color_mixers.cc
++++ b/chrome/browser/ui/color/chrome_color_mixers.cc
+@@ -23,9 +23,72 @@
+ #include "chrome/browser/ui/color/omnibox_color_mixer.h"
+ #include "chrome/browser/ui/color/product_specifications_color_mixer.h"
+ #include "chrome/browser/ui/color/tab_strip_color_mixer.h"
++#include "third_party/skia/include/core/SkColor.h"
++#include "ui/color/color_mixer.h"
++#include "ui/color/color_provider.h"
++#include "ui/color/color_provider_key.h"
+ #include "ui/color/color_provider_utils.h"
++#include "ui/color/color_recipe.h"
+ 
+ namespace {
++
++void AddFlintBrowserColors(ui::ColorProvider* provider,
++                           const ui::ColorProviderKey& key) {
++  // Incognito uses the grayscale palette. Let it, user-supplied themes,
++  // installed apps, and high-contrast modes keep their own colors.
++  if (key.color_mode != ui::ColorProviderKey::ColorMode::kDark ||
++      key.user_color_source != ui::ColorProviderKey::UserColorSource::kBaseline ||
++      key.contrast_mode != ui::ColorProviderKey::ContrastMode::kNormal ||
++      key.forced_colors != ui::ColorProviderKey::ForcedColors::kNone ||
++      key.app_controller || !ShouldApplyChromeMaterialOverrides(key)) {
++    return;
++  }
++
++  constexpr SkColor kFrame = SkColorSetRGB(0x16, 0x17, 0x19);
++  constexpr SkColor kToolbar = SkColorSetRGB(0x2d, 0x2e, 0x30);
++  constexpr SkColor kField = SkColorSetRGB(0x1c, 0x1d, 0x1f);
++  constexpr SkColor kText = SkColorSetRGB(0xf3, 0xf0, 0xe9);
++  constexpr SkColor kQuietText = SkColorSetRGB(0xc4, 0xc0, 0xb8);
++  constexpr SkColor kFlintEdge = SkColorSetRGB(0xe1, 0xbd, 0x91);
++  ui::ColorMixer& mixer = provider->AddMixer();
++  mixer[ui::kColorFrameActive] = {kFrame};
++  mixer[ui::kColorFrameInactive] = {SkColorSetRGB(0x22, 0x23, 0x25)};
++  mixer[kColorToolbar] = {kToolbar};
++  mixer[kColorToolbarText] = {kText};
++  mixer[kColorToolbarButtonIcon] = {kQuietText};
++  mixer[kColorToolbarContentAreaSeparator] = {SkColorSetRGB(0x49, 0x49, 0x47)};
++
++  mixer[kColorTabBackgroundActiveFrameActive] = {kToolbar};
++  mixer[kColorTabBackgroundActiveFrameInactive] = {kToolbar};
++  mixer[kColorDetachedTabBackgroundActiveFrameActive] = {kToolbar};
++  mixer[kColorTabBackgroundInactiveFrameActive] = {ui::kColorFrameActive};
++  mixer[kColorTabBackgroundInactiveFrameInactive] = {ui::kColorFrameInactive};
++  mixer[kColorTabBackgroundInactiveHoverFrameActive] = {
++      SkColorSetRGB(0x36, 0x36, 0x37)};
++  mixer[kColorTabBackgroundInactiveHoverFrameInactive] = {
++      kColorTabBackgroundInactiveHoverFrameActive};
++  mixer[kColorTabBackgroundSelectedFrameActive] = {
++      SkColorSetRGB(0x45, 0x40, 0x39)};
++  mixer[kColorTabBackgroundSelectedFrameInactive] = {
++      kColorTabBackgroundSelectedFrameActive};
++  mixer[kColorTabForegroundActiveFrameActive] = {kText};
++  mixer[kColorTabForegroundInactiveFrameActive] = {kQuietText};
++  mixer[kColorTabStrokeFrameActive] = {SkColorSetRGB(0xb1, 0x9e, 0x86)};
++  mixer[kColorTabStrokeFrameInactive] = {SkColorSetRGB(0x87, 0x7b, 0x6d)};
++  mixer[kColorTabFocusRingActive] = {kFlintEdge};
++
++  mixer[kColorLocationBarBackground] = {kField};
++  mixer[kColorLocationBarBackgroundHovered] = {SkColorSetRGB(0x24, 0x25, 0x27)};
++  mixer[kColorLocationBarBorder] = {SkColorSetRGB(0x61, 0x60, 0x5c)};
++  mixer[kColorOmniboxText] = {kText};
++  mixer[kColorOmniboxTextDimmed] = {kQuietText};
++  mixer[kColorOmniboxResultsBackground] = {kField};
++  mixer[kColorOmniboxResultsBackgroundHovered] = {kToolbar};
++  mixer[kColorOmniboxResultsBackgroundSelected] = {
++      kColorTabBackgroundSelectedFrameActive};
++  mixer[kColorOmniboxResultsFocusIndicator] = {kFlintEdge};
++  mixer[kColorOmniboxResultsUrl] = {kFlintEdge};
++}
+ 
+ class ChromeColorProviderUtilsCallbacks
+     : public ui::ColorProviderUtilsCallbacks {
+@@ -84,6 +147,7 @@
+   AddMaterialOmniboxColorMixer(provider, key);
+   AddMaterialSidePanelColorMixer(provider, key);
+   AddMaterialTabStripColorMixer(provider, key);
++  AddFlintBrowserColors(provider, key);
+ 
+   // Must be the last one in order to override other mixer colors.
+   AddNativeChromeColorMixer(provider, key);
+--- a/chrome/browser/ui/layout_constants.cc
++++ b/chrome/browser/ui/layout_constants.cc
+@@ -84,7 +84,7 @@
+     case LayoutConstant::kLocationBarTrailingDecorationInnerPadding:
+       return touch_ui ? 3 : 8;
+     case LayoutConstant::kLocationBarHeight:
+-      return touch_ui ? 36 : 34;
++      return touch_ui ? 40 : 36;
+     // LINT.IfChange(LocationBarIconSize)
+     case LayoutConstant::kLocationBarIconSize:
+       return touch_ui ? 20 : 16;
+@@ -110,7 +110,7 @@
+     case LayoutConstant::kTabCloseButtonSize:
+       return touch_ui ? 24 : (features::IsRoundedIconsEnabled() ? 14 : 16);
+     case LayoutConstant::kTabHeight:
+-      return 34 + GetLayoutConstant(LayoutConstant::kTabstripToolbarOverlap);
++      return 38 + GetLayoutConstant(LayoutConstant::kTabstripToolbarOverlap);
+     case LayoutConstant::kTabStripHeight:
+       return GetLayoutConstant(LayoutConstant::kTabHeight) +
+              GetLayoutConstant(LayoutConstant::kTabStripPadding);
+--- a/chrome/browser/ui/tabs/tab_style.cc
++++ b/chrome/browser/ui/tabs/tab_style.cc
+@@ -95,11 +95,11 @@
+ }
+ 
+ int TabStyle::GetTopCornerRadius() const {
+-  return 10;
++  return 7;
+ }
+ 
+ int TabStyle::GetBottomCornerRadius() const {
+-  return 12;
++  return 6;
+ }
+ 
+ int TabStyle::GetBottomExtensionWidth() const {
+--- a/chrome/browser/ui/views/chrome_layout_provider.cc
++++ b/chrome/browser/ui/views/chrome_layout_provider.cc
+@@ -339,7 +339,7 @@
+            views::ShapeSysTokens::kMediumSmall},
+           {kActionAppMenuBlockEntryCornerRadius,
+            views::ShapeSysTokens::kMediumSmall},
+-          {kOmniboxExpandedRadius, views::ShapeSysTokens::kMedium},
++          {kOmniboxExpandedRadius, views::ShapeSysTokens::kMediumSmall},
+       });
+   const auto it = shape_token_map.find(id);
+   return it == shape_token_map.end() ? views::ShapeSysTokens::kDefault
+--- a/chrome/browser/ui/views/location_bar/location_bar_view.cc
++++ b/chrome/browser/ui/views/location_bar/location_bar_view.cc
+@@ -58,7 +58,6 @@
+ #include "chrome/browser/ui/tabs/tab_strip_model.h"
+ #include "chrome/browser/ui/ui_features.h"
+ #include "chrome/browser/ui/views/bubble_anchor_util_views.h"
+-#include "chrome/browser/ui/views/chrome_layout_provider.h"
+ #include "chrome/browser/ui/views/chrome_typography.h"
+ #include "chrome/browser/ui/views/frame/browser_view.h"
+ #include "chrome/browser/ui/views/location_bar/content_setting_image_view.h"
+@@ -173,6 +172,8 @@
+ 
+ namespace {
+ 
++constexpr int kLocationBarCornerRadius = 8;
++
+ int IncrementalMinimumWidth(const views::View* view) {
+   return (view && view->GetVisible()) ? view->GetMinimumSize().width() : 0;
+ }
+@@ -257,7 +258,9 @@
+                  !v->ShouldUsePopupOpenAppearance();
+         }));
+     views::FocusRing::Get(this)->SetOutsetFocusRingDisabled(true);
+-    views::InstallPillHighlightPathGenerator(this);
++    views::FocusRing::Get(this)->SetColorId(kColorOmniboxResultsFocusIndicator);
++    views::InstallRoundRectHighlightPathGenerator(this, gfx::Insets(),
++                                                  kLocationBarCornerRadius);
+ 
+ #if BUILDFLAG(OS_LEVEL_GEOLOCATION_PERMISSION_SUPPORTED)
+     if (features::IsOsLevelGeolocationPermissionSupportEnabled()) {
+@@ -533,8 +536,8 @@
+ 
+ // static
+ int LocationBarView::ComputeBorderRadius(gfx::Size size) {
+-  return ChromeLayoutProvider::Get()->GetCornerRadiusMetric(
+-      views::Emphasis::kMaximum, size);
++  return std::min({kLocationBarCornerRadius, size.width() / 2,
++                   size.height() / 2});
+ }
+ 
+ // static
+@@ -1389,7 +1392,7 @@
+ }
+ 
+ gfx::Rect LocationBarView::GetLocalBoundsWithoutEndcaps() const {
+-  const int border_radius = height() / 2;
++  const int border_radius = GetBorderRadius();
+   gfx::Rect bounds_without_endcaps(GetLocalBounds());
+   bounds_without_endcaps.Inset(gfx::Insets::VH(0, border_radius));
+   return bounds_without_endcaps;
+@@ -1424,7 +1427,7 @@
+     background_color_ = gfx::Tween::ColorValueBetween(opacity, normal, hovered);
+   }
+ 
+-  SkColor border_color = SK_ColorTRANSPARENT;
++  SkColor border_color = color_provider->GetColor(kColorLocationBarBorder);
+   if (high_contrast) {
+     // High contrast schemes get a border stroke even on a rounded omnibox.
+     border_color =
+--- a/chrome/browser/ui/views/tabs/common/horizontal_tab_style_views.cc
++++ b/chrome/browser/ui/views/tabs/common/horizontal_tab_style_views.cc
+@@ -670,7 +670,7 @@
+   }
+ 
+   if (delegate_->IsActive()) {
+-    return delegate_->GetStrokeThickness();
++    return std::max(1, delegate_->GetStrokeThickness());
+   }
+ 
+   if (delegate_->IsPinned() && tabs::IsNewHorizontalPinnedTabStylingEnabled()) {

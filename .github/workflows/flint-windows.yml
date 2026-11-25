@@ -1,6 +1,8 @@
 name: Compile Flint Windows x64
 on:
   workflow_dispatch:
+  push:
+    branches: [codex/flint-native]
 permissions:
   contents: read
 concurrency:
@@ -104,16 +106,22 @@ jobs:
   verify-package:
     needs: [stage-1, stage-2, stage-3, stage-4, stage-5, stage-6, stage-7, stage-8, stage-9, stage-10, stage-11, stage-12, stage-13, stage-14, stage-15, stage-16]
     if: ${{ !cancelled() }}
-    runs-on: ubuntu-latest
+    runs-on: windows-2022
     steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
           name: chromium
           path: package
-      - name: Verify browser archive and installer
-        shell: bash
+      - name: Check the packaged native browser and new tab
+        shell: pwsh
         run: |
-          set -eu
-          compgen -G 'package/*.zip' >/dev/null
-          compgen -G 'package/*.exe' >/dev/null
-          sha256sum package/*
+          ./flint/windows/Verify-Native.ps1 -PackageDirectory package -OutputDirectory verified
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Flint-Windows-x64
+          path: verified/*
+          if-no-files-found: error
+          compression-level: 0

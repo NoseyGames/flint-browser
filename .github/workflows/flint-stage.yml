@@ -25,18 +25,9 @@ jobs:
         with:
           path: ungoogled-chromium
           persist-credentials: false
-      - name: Add the Flint patches to the Windows build
+      - name: Integrate native Flint assets with the Windows build
         shell: pwsh
-        run: |
-          $root = 'ungoogled-chromium'
-          if ((Get-Content "$root/chromium_version.txt" -Raw).Trim() -ne '158.0.8127.36') { throw 'Update the Windows packaging revision for this Chromium version.' }
-          Expand-Archive "$root/docs/Flint-architecture-and-patches.zip" "$env:RUNNER_TEMP/flint-kit"
-          $patches = '01-user-install.patch', '02-brand-and-credits.patch', '04-obsidian-base.patch'
-          New-Item -ItemType Directory "$root/patches/flint" | Out-Null
-          foreach ($patch in $patches) {
-            Copy-Item "$env:RUNNER_TEMP/flint-kit/patches/$patch" "$root/patches/flint/"
-            Add-Content "$root/patches/series" "flint/$patch"
-          }
+        run: ./ungoogled-chromium/flint/windows/Build-Native.ps1 -PlatformDirectory $env:GITHUB_WORKSPACE
       - uses: ./.github/actions/prepare
       - name: Compile or resume and package Windows x64
         id: stage

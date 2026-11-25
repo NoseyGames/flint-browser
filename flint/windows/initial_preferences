@@ -2,7 +2,7 @@
   "browser": {
     "theme": {
       "color_scheme2": 2,
-      "is_grayscale2": true,
+      "is_grayscale2": false,
       "follows_system_colors": false
     }
   },
@@ -10,9 +10,6 @@
     "name": "Flint",
     "cookie_controls_mode": 1,
     "default_content_setting_values": { "notifications": 2 }
-  },
-  "extensions": {
-    "pinned_extensions": ["pfodidmbcbclkiljfmoodkacljglmomp"]
   },
   "https_only_mode_enabled": true,
   "net": { "network_prediction_options": 2 },

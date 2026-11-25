@@ -1,0 +1,108 @@
+--- a/services/network/public/cpp/features.h
++++ b/services/network/public/cpp/features.h
+@@ -14,6 +14,8 @@
+ 
+ namespace network::features {
+ 
++COMPONENT_EXPORT(NETWORK_CPP_FLAGS_AND_SWITCHES)
++BASE_DECLARE_FEATURE(kFlintTrackerBlocking);
+ COMPONENT_EXPORT(NETWORK_CPP_FLAGS_AND_SWITCHES)
+ BASE_DECLARE_FEATURE(kNetworkErrorLogging);
+ COMPONENT_EXPORT(NETWORK_CPP_FLAGS_AND_SWITCHES)
+--- a/services/network/public/cpp/features.cc
++++ b/services/network/public/cpp/features.cc
+@@ -15,6 +15,8 @@
+ #include "net/base/mime_sniffer.h"
+ 
+ namespace network::features {
++
++BASE_FEATURE(kFlintTrackerBlocking, base::FEATURE_ENABLED_BY_DEFAULT);
+ 
+ BASE_FEATURE(kNetworkErrorLogging, base::FEATURE_ENABLED_BY_DEFAULT);
+ 
+--- a/services/network/url_loader.cc
++++ b/services/network/url_loader.cc
+@@ -141,6 +142,42 @@
+ 
+ namespace {
+ 
++bool ShouldBlockFlintTracker(const net::URLRequest& request,
++                             mojom::RequestDestination destination,
++                             const GURL& target) {
++  if (destination == mojom::RequestDestination::kDocument ||
++      !target.SchemeIsHTTPOrHTTPS() ||
++      !base::FeatureList::IsEnabled(features::kFlintTrackerBlocking)) {
++    return false;
++  }
++
++  static constexpr auto domains = base::MakeFixedFlatSet<std::string_view>({
++      "adsrvr.org", "analytics.tiktok.com", "bat.bing.com", "clarity.ms",
++      "connect.facebook.net", "doubleclick.net", "google-analytics.com",
++      "googleadservices.com", "hotjar.com", "hotjar.io", "mouseflow.com",
++      "scorecardresearch.com", "snap.licdn.com",
++  });
++  std::string_view host = target.host();
++  if (host.ends_with('.')) {
++    host.remove_suffix(1);
++  }
++  while (!host.empty()) {
++    if (domains.contains(host)) {
++      const auto& top_frame = request.isolation_info().top_frame_origin();
++      const auto& origin = top_frame.has_value() ? top_frame : request.initiator();
++      return origin && !origin->opaque() &&
++             !net::SchemefulSite::IsSameSite(*origin, url::Origin::Create(target));
++    }
++    size_t dot = host.find('.');
++    if (dot == std::string_view::npos) {
++      break;
++    }
++    host.remove_prefix(dot + 1);
++  }
++  return false;
++}
++
++
+ BASE_FEATURE(kDelayedCookieNotification, base::FEATURE_DISABLED_BY_DEFAULT);
+ 
+ // Cannot use 0, because this means "default" in
+@@ -553,6 +590,15 @@
+         request.net_log_reference_info.value());
+   }
+ 
++  if (ShouldBlockFlintTracker(*url_request_, request_destination_, request.url)) {
++    // The factory still owns construction; finish on the next task.
++    TaskRunner(url_request_->priority())
++        ->PostTask(FROM_HERE, base::BindOnce(&URLLoader::NotifyCompleted,
++                                             weak_ptr_factory_.GetWeakPtr(),
++                                             net::ERR_BLOCKED_BY_CLIENT));
++    return;
++  }
++
+   // Resolve elements from request_body and prepare upload data.
+   if (request.request_body.get()) {
+     OpenFilesForUpload(request);
+@@ -780,6 +826,12 @@
+     const std::optional<GURL>& new_url) {
+   if (!deferred_redirect_url_) {
+     NOTREACHED();
++  }
++
++  if (ShouldBlockFlintTracker(*url_request_, request_destination_,
++                              new_url ? *new_url : *deferred_redirect_url_)) {
++    NotifyCompleted(net::ERR_BLOCKED_BY_CLIENT);
++    return;
+   }
+ 
+   // Note: There are some ordering dependencies here.
+--- a/chrome/browser/about_flags.cc
++++ b/chrome/browser/about_flags.cc
+@@ -5402,6 +5402,9 @@
+     {switches::kEnableBenchmarking, flag_descriptions::kEnableBenchmarkingName,
+      flag_descriptions::kEnableBenchmarkingDescription, kOsAll,
+      MULTI_VALUE_TYPE(kEnableBenchmarkingChoices)},
++    {"flint-tracker-blocking", "Flint tracker blocking",
++     "Block third-party HTTP and HTTPS subrequests to the built-in tracker list.",
++     kOsDesktop, FEATURE_VALUE_TYPE(network::features::kFlintTrackerBlocking)},
+     {"ignore-gpu-blocklist", flag_descriptions::kIgnoreGpuBlocklistName,
+      flag_descriptions::kIgnoreGpuBlocklistDescription, kOsAll,
+      SINGLE_VALUE_TYPE(switches::kIgnoreGpuBlocklist)},

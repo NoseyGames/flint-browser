@@ -110,3 +110,10 @@ extra/ungoogled-chromium/disable-fedcm-by-default.patch
 extra/ungoogled-chromium/bundle-hyphenation-patterns.patch
 extra/ungoogled-chromium/add-flag-for-disabling-jit.patch
 extra/ungoogled-chromium/add-flag-to-hide-window-buttons.patch
+extra/flint/per-user-install.patch
+extra/flint/brand-and-credits.patch
+extra/flint/windows-identity.patch
+extra/flint/browser-chrome.patch
+extra/flint/native-tracker-blocking.patch
+extra/flint/new-tab-page.patch
+extra/flint/profile-defaults.patch

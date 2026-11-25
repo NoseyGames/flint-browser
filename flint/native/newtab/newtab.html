@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>New tab</title>
-  <link rel="icon" href="icons/flint-32.png">
+  <link rel="icon" href="flint-32.png">
   <link rel="stylesheet" href="newtab.css">
-  <script defer src="newtab.js"></script>
+  <script type="module" src="newtab.js"></script>
 </head>
 <body>
   <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -26,12 +26,12 @@
     <div class="surface">
       <div class="art" aria-hidden="true"></div>
       <header>
-        <div class="wordmark"><img src="icons/flint-48.png" alt="" width="32" height="32">Flint</div>
+        <div class="wordmark"><img src="flint-48.png" alt="" width="32" height="32">Flint</div>
         <nav aria-label="Browser tools">
-          <button type="button" class="tool" data-page="history" aria-label="History" title="History"><svg><use href="#i-history"/></svg></button>
-          <button type="button" class="tool" data-page="downloads" aria-label="Downloads" title="Downloads"><svg><use href="#i-download"/></svg></button>
+          <a href="chrome://history/" class="tool" aria-label="History" title="History"><svg><use href="#i-history"/></svg></a>
+          <a href="chrome://downloads/" class="tool" aria-label="Downloads" title="Downloads"><svg><use href="#i-download"/></svg></a>
           <span class="divider" aria-hidden="true"></span>
-          <button type="button" class="tool privacy" id="privacy"><svg><use href="#i-privacy"/></svg>Privacy</button>
+          <a href="chrome://settings/privacy" class="tool privacy"><svg><use href="#i-privacy"/></svg>Privacy</a>
         </nav>
       </header>
 

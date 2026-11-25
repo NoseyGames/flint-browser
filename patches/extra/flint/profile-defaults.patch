@@ -1,0 +1,103 @@
+--- a/chrome/BUILD.gn
++++ b/chrome/BUILD.gn
+@@ -207,6 +207,7 @@
+         ":chrome_dll",
+         ":chrome_exe_version",
+         ":copy_first_run",
++        ":copy_flint_initial_preferences",
+         ":copy_minibranch",
+         ":visual_elements_resources",
+         "//base",
+@@ -480,6 +481,13 @@
+     }
+   }
+ 
++  if (is_win) {
++    copy("copy_flint_initial_preferences") {
++      sources = [ "app/flint_initial_preferences" ]
++      outputs = [ "$root_out_dir/initial_preferences" ]
++    }
++  }
++
+   copy("copy_first_run") {
+     sources = [ "app/FirstRun" ]
+     outputs = [ "$root_out_dir/First Run" ]
+--- a/chrome/browser/chrome_browser_main.cc
++++ b/chrome/browser/chrome_browser_main.cc
+@@ -1340,7 +1340,6 @@
+   if (first_run::IsChromeFirstRun()) {
+     if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kApp) &&
+         !base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kAppId)) {
+-      browser_creator_->AddFirstRunTabs({GURL("chrome://ungoogled-first-run")});
+       browser_creator_->AddFirstRunTabs(master_prefs_->new_tabs);
+     }
+   }
+--- a/chrome/browser/first_run/first_run_internal_win.cc
++++ b/chrome/browser/first_run/first_run_internal_win.cc
+@@ -161,7 +161,20 @@
+   if (!base::PathService::Get(base::DIR_EXE, &dir_exe))
+     return base::FilePath();
+ 
+-  return installer::InitialPreferences::Path(dir_exe);
++  // An administrator can supply initial_preferences (or master_preferences)
++  // beside the executable. The portable distribution also uses this location.
++  base::FilePath preferences = installer::InitialPreferences::Path(dir_exe);
++  if (base::PathExists(preferences)) {
++    return preferences;
++  }
++
++  // The Windows installer publishes the bundled defaults atomically with
++  // chrome.dll in the version directory. Keep the executable-side override.
++  base::FilePath module_dir;
++  if (base::PathService::Get(base::DIR_MODULE, &module_dir)) {
++    return installer::InitialPreferences::Path(module_dir);
++  }
++  return preferences;
+ }
+ 
+ }  // namespace internal
+--- a/chrome/installer/mini_installer/BUILD.gn
++++ b/chrome/installer/mini_installer/BUILD.gn
+@@ -152,6 +152,7 @@
+     "$root_out_dir/chrome.dll",
+     "$root_out_dir/chrome_elf.dll",
+     "$root_out_dir/chrome.exe",
++    "$root_out_dir/initial_preferences",
+     "$root_out_dir/locales/en-US.pak",
+     "$root_out_dir/setup.exe",
+     "//chrome/tools/build/win/makecab.py",
+--- a/chrome/installer/mini_installer/chrome.release
++++ b/chrome/installer/mini_installer/chrome.release
+@@ -28,6 +28,7 @@
+ d3dcompiler_47.dll: %(VersionDir)s\
+ eventlog_provider.dll: %(VersionDir)s\
+ icudtl.dat: %(VersionDir)s\
++initial_preferences: %(VersionDir)s\
+ libEGL.dll: %(VersionDir)s\
+ libGLESv2.dll: %(VersionDir)s\
+ libLiteRtWebGpuAccelerator.dll: %(VersionDir)s\
+--- a/chrome/tools/build/win/FILES.cfg
++++ b/chrome/tools/build/win/FILES.cfg
+@@ -48,6 +48,11 @@
+     'optional': ['official'],
+   },
+   {
++    'filename': 'initial_preferences',
++    'buildtype': ['official'],
++    'filegroup': ['default'],
++  },
++  {
+     'filename': 'chrome.exe',
+     'buildtype': ['official'],
+     'filegroup': ['default', 'symsrc'],
+--- a/components/performance_manager/user_tuning/prefs.cc
++++ b/components/performance_manager/user_tuning/prefs.cc
+@@ -32,7 +32,7 @@
+       kMemorySaverModeTimeBeforeDiscardInMinutes,
+       kDefaultMemorySaverModeTimeBeforeDiscardInMinutes);
+   registry->RegisterIntegerPref(
+-      kMemorySaverModeState, static_cast<int>(MemorySaverModeState::kDisabled));
++      kMemorySaverModeState, static_cast<int>(MemorySaverModeState::kEnabled));
+   registry->RegisterIntegerPref(
+       kMemorySaverModeAggressiveness,
+       static_cast<int>(MemorySaverModeAggressiveness::kMedium));

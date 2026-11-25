@@ -1,0 +1,11 @@
+--- a/chrome/install_static/chromium_install_modes.h
++++ b/chrome/install_static/chromium_install_modes.h
+@@ -98,7 +98,7 @@
+         .default_channel_name =
+             L"",  // Empty default channel name since no update integration.
+         .channel_strategy = ChannelStrategy::UNSUPPORTED,
+-        .supports_system_level = true,  // Supports system-level installs.
++        .supports_system_level = false,  // Flint uses per-user installation.
+         .supports_set_as_default_browser =
+             true,  // Supports in-product set as default browser UX.
+         .app_icon_resource_index =

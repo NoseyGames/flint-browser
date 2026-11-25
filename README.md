@@ -1,25 +1,20 @@
 # Flint Browser
 
-Flint is a Windows x64 distribution of ungoogled Chromium. It pairs native Chromium windows, tabs and DevTools with a dark Flint profile, a local obsidian new tab, and a toolbar control for third-party tracker blocking.
+Flint is a Windows x64 fork of ungoogled Chromium. Its tabs, address bar, search suggestions, start page, tracker filter and application icon are compiled into the browser. The Windows icon includes the original Flint 32 px artwork. In private windows Chromium uses its separate private browsing interface.
 
-## Run Flint on Windows
+## Build and run on Windows
 
-From the repository root in PowerShell, build the launcher and open the browser:
+The **Compile Flint Windows x64** GitHub Actions workflow builds the pinned Chromium source and Windows installer. It preserves intermediate compilation results across hosted runners. After the verification job passes, download the **Flint-Windows-x64** artifact from the run. It includes the portable ZIP, the per-user installer and SHA-256 checksums. Extract the portable ZIP and launch its native `chrome.exe`, or run `Flint-Setup-x64.exe`. The native executable retains the Chromium build system's filename and carries Flint's product identity and icon.
+
+To start a build from a checked-out revision on GitHub:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\flint\windows\Build-Flint.ps1
-.\Flint.exe
+gh workflow run flint-windows.yml --repo NoseyGames/flint-browser --ref codex/flint-native
 ```
 
-The build uses the Windows .NET Framework compiler and downloads a pinned x64 archive from [ungoogled-chromium-windows](https://github.com/ungoogled-software/ungoogled-chromium-windows/releases). It verifies the archive's SHA-256 before extraction. A fresh profile opens the upstream welcome page once. Press **Ctrl+T** for Flint and choose **Keep it** if Chromium asks about your new-tab preference. For subsequent launches, open `Flint.exe` or pass it an `https://` address. Keep the executable beside the `flint` folder. Chromium uses commas to separate extension paths, so use a folder path without commas.
+The start page reads the search provider from the active profile. Fresh profiles select DuckDuckGo, enable HTTPS-First, block third-party cookies and notification prompts, and turn off remote search suggestions and speculative page loading. Adjust these in Chromium Settings. Flint's network service blocks third-party HTTP(S) subrequests to its built-in list of tracker domains. Change this under `chrome://flags/#flint-tracker-blocking` and relaunch.
 
-To produce a self-contained distribution, pass `-Package` to the build script. Extract `build/Flint-Windows-x64.zip` before opening `Flint.exe`. The archive includes the engine and local interface assets.
-
-Flint keeps its browsing data under `%LOCALAPPDATA%\Flint\User Data`. Initial preferences apply once. Use Chromium Settings to adjust privacy, performance, and appearance, and the Flint toolbar action to inspect or toggle its bundled domain list. The list applies to third-party subrequests in windows where the extension is enabled. For private windows, turn on **Allow in Incognito** in the Flint extension's details.
-
-Fresh profiles use DuckDuckGo for search, block third-party cookies and notification prompts, enable HTTPS-First and balanced Memory Saver, and disable remote search suggestions and page preloading. Pinned sites stay in the local profile. The new tab loads its artwork, styles and scripts from disk.
-
-The Windows engine is the upstream prebuilt binary. Some native dialogs, the taskbar, and `chrome://version` identify it as Chromium. Engine updates require a new pinned archive and digest in `flint/windows/Install-Runtime.ps1` and a launcher rebuild.
+Flint uses `%LOCALAPPDATA%\Flint\User Data`. Start with the old Flint browser closed when switching builds so the native process owns that profile. Pinned sites previously stored by the extension belong to a different origin and must be added again on the native new tab. The browser does not automatically download engine updates.
 
 ## Upstream ungoogled-chromium
 

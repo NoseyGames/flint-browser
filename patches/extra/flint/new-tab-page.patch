@@ -1,0 +1,191 @@
+--- a/chrome/browser/search/search.cc
++++ b/chrome/browser/search/search.cc
+@@ -177,7 +177,9 @@
+       return NewTabURLDetails(GURL(), NEW_TAB_URL_INCOGNITO);
+     }
+ 
++#if !BUILDFLAG(IS_WIN)
+     const bool default_is_google = DefaultSearchProviderIsGoogle(profile);
++#endif
+ 
+ #if BUILDFLAG(IS_ANDROID)
+     const bool is_desktop_android = IsWebUiNtpEnabledForDesktopAndroid();
+@@ -196,6 +198,8 @@
+         local_url = GURL(chrome::kChromeUINewTabPageThirdPartyURL);
+       }
+     }
++#elif BUILDFLAG(IS_WIN)
++    const GURL local_url(chrome::kChromeUINewTabPageThirdPartyURL);
+ #else
+     const GURL local_url(default_is_google
+                              ? chrome::ChromeUINewTabPageURLAsGURL()
+--- a/ui/webui/resources/tools/build_webui.gni
++++ b/ui/webui/resources/tools/build_webui.gni
+@@ -175,6 +175,7 @@
+       "*.jpg",
+       "*.png",
+       "*.svg",
++      "*.webp",
+     ]
+     static_non_preprocessed_files =
+         filter_include(invoker.static_files, non_preprocessed_files_filter)
+--- a/chrome/browser/resources/new_tab_page_third_party/BUILD.gn
++++ b/chrome/browser/resources/new_tab_page_third_party/BUILD.gn
+@@ -9,8 +9,19 @@
+ 
+ build_webui("build") {
+   grd_prefix = "new_tab_page_third_party"
+-  static_files = [ "new_tab_page_third_party.html" ]
+-  ts_files = [ "new_tab_page_third_party.ts" ]
++  if (is_win) {
++    static_files = [
++      "flint-32.png",
++      "flint-48.png",
++      "newtab.css",
++      "newtab.html",
++      "obsidian.webp",
++    ]
++    ts_files = [ "newtab.ts" ]
++  } else {
++    static_files = [ "new_tab_page_third_party.html" ]
++    ts_files = [ "new_tab_page_third_party.ts" ]
++  }
+ 
+   mojo_files_deps = [ "//chrome/browser/ui/webui/new_tab_page_third_party:mojo_bindings_ts__generator" ]
+   mojo_files = [ "$root_gen_dir/chrome/browser/ui/webui/new_tab_page_third_party/new_tab_page_third_party.mojom-webui.ts" ]
+--- a/chrome/browser/ui/webui/new_tab_page_third_party/new_tab_page_third_party_ui.cc
++++ b/chrome/browser/ui/webui/new_tab_page_third_party/new_tab_page_third_party_ui.cc
+@@ -180,7 +180,11 @@
+ 
+   webui::SetupWebUIDataSource(
+       source, kNewTabPageThirdPartyResources,
++#if BUILDFLAG(IS_WIN)
++      IDR_NEW_TAB_PAGE_THIRD_PARTY_NEWTAB_HTML);
++#else
+       IDR_NEW_TAB_PAGE_THIRD_PARTY_NEW_TAB_PAGE_THIRD_PARTY_HTML);
++#endif
+ }
+ }  // namespace
+ 
+--- a/chrome/browser/ui/webui/new_tab_page_third_party/BUILD.gn
++++ b/chrome/browser/ui/webui/new_tab_page_third_party/BUILD.gn
+@@ -45,6 +45,7 @@
+     "//chrome/browser:browser_features",
+     "//chrome/browser/profiles:profile",
+     "//chrome/browser/resources/new_tab_page_third_party:resources",
++    "//chrome/browser/search_engines",
+     "//chrome/browser/themes",
+     "//chrome/browser/ui/color:color_headers",
+     "//chrome/browser/ui/search",
+@@ -56,6 +57,8 @@
+     "//components/favicon_base",
+     "//components/prefs",
+     "//components/search",
++    "//components/search_engines",
++    "//services/network/public/cpp",
+     "//content/public/browser",
+     "//ui/color",
+     "//ui/gfx:color_utils",
+--- a/chrome/browser/ui/webui/new_tab_page_third_party/new_tab_page_third_party.mojom
++++ b/chrome/browser/ui/webui/new_tab_page_third_party/new_tab_page_third_party.mojom
+@@ -39,6 +39,9 @@
+ interface PageHandler {
+   // Called to update the theme.
+   UpdateTheme();
++  // Submits an explicit query using the current profile's search provider.
++  Search(string query) => (bool started);
++  GetSearchProviderName() => (string name);
+ };
+ 
+ // WebUI-side handler for requests from the browser.
+--- a/chrome/browser/ui/webui/new_tab_page_third_party/new_tab_page_third_party_handler.h
++++ b/chrome/browser/ui/webui/new_tab_page_third_party/new_tab_page_third_party_handler.h
+@@ -4,6 +4,8 @@
+ 
+ #ifndef CHROME_BROWSER_UI_WEBUI_NEW_TAB_PAGE_THIRD_PARTY_NEW_TAB_PAGE_THIRD_PARTY_HANDLER_H_
+ #define CHROME_BROWSER_UI_WEBUI_NEW_TAB_PAGE_THIRD_PARTY_NEW_TAB_PAGE_THIRD_PARTY_HANDLER_H_
++
++#include <string>
+ 
+ #include "base/memory/raw_ptr.h"
+ #include "build/build_config.h"
+@@ -51,6 +53,8 @@
+ 
+   // new_tab_page_third_party::mojom::PageHandler:
+   void UpdateTheme() override;
++  void Search(const std::string& query, SearchCallback callback) override;
++  void GetSearchProviderName(GetSearchProviderNameCallback callback) override;
+ 
+  private:
+   // ThemeServiceObserver:
+--- a/chrome/browser/ui/webui/new_tab_page_third_party/new_tab_page_third_party_handler.cc
++++ b/chrome/browser/ui/webui/new_tab_page_third_party/new_tab_page_third_party_handler.cc
+@@ -4,9 +4,14 @@
+ 
+ #include "chrome/browser/ui/webui/new_tab_page_third_party/new_tab_page_third_party_handler.h"
+ 
++#include <utility>
++
++#include "base/containers/span.h"
+ #include "base/feature_list.h"
++#include "base/strings/utf_string_conversions.h"
+ #include "build/build_config.h"
+ #include "chrome/browser/profiles/profile.h"
++#include "chrome/browser/search_engines/template_url_service_factory.h"
+ #include "chrome/browser/themes/theme_properties.h"
+ #include "chrome/browser/themes/theme_service.h"
+ #include "chrome/browser/themes/theme_service_factory.h"
+@@ -15,6 +20,10 @@
+ #include "chrome/grit/theme_resources.h"
+ #include "components/prefs/pref_service.h"
+ #include "components/search/ntp_features.h"
++#include "components/search_engines/template_url.h"
++#include "components/search_engines/util.h"
++#include "content/public/browser/navigation_controller.h"
++#include "services/network/public/cpp/resource_request_body.h"
+ #include "content/public/browser/web_contents.h"
+ #include "ui/color/color_provider.h"
+ #include "ui/gfx/color_utils.h"
+@@ -45,6 +54,42 @@
+ 
+ NewTabPageThirdPartyHandler::~NewTabPageThirdPartyHandler() {
+   ThemeServiceFactory::GetForProfile(profile_)->RemoveObserver(this);
++}
++
++void NewTabPageThirdPartyHandler::Search(const std::string& query,
++                                         SearchCallback callback) {
++  auto* service = TemplateURLServiceFactory::GetForProfile(profile_);
++  const TemplateURL* provider = service ? service->GetDefaultSearchProvider() : nullptr;
++  if (!provider || query.empty() || query.size() > 65536 ||
++      !provider->url_ref().SupportsReplacement(service->search_terms_data())) {
++    std::move(callback).Run(false);
++    return;
++  }
++  TemplateURLRef::SearchTermsArgs terms(base::UTF8ToUTF16(query));
++  TemplateURLRef::PostContent post;
++  GURL destination(provider->url_ref().ReplaceSearchTerms(
++      terms, service->search_terms_data(), &post));
++  if (!destination.is_valid() || !destination.SchemeIsHTTPOrHTTPS()) {
++    std::move(callback).Run(false);
++    return;
++  }
++  content::NavigationController::LoadURLParams params(destination);
++  params.transition_type = ui::PAGE_TRANSITION_GENERATED;
++  if (!post.second.empty()) {
++    params.load_type = content::NavigationController::LOAD_TYPE_HTTP_POST;
++    params.post_data = network::ResourceRequestBody::CreateFromCopyOfBytes(
++        base::as_byte_span(post.second));
++    params.post_content_type = post.first;
++  }
++  std::move(callback).Run(true);
++  web_contents_->GetController().LoadURLWithParams(params);
++}
++
++void NewTabPageThirdPartyHandler::GetSearchProviderName(
++    GetSearchProviderNameCallback callback) {
++  auto* service = TemplateURLServiceFactory::GetForProfile(profile_);
++  std::move(callback).Run(
++      service ? base::UTF16ToUTF8(GetDefaultSearchEngineName(service)) : "");
+ }
+ 
+ void NewTabPageThirdPartyHandler::UpdateTheme() {
