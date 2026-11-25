@@ -8,7 +8,7 @@
          ":copy_minibranch",
          ":visual_elements_resources",
          "//base",
-@@ -480,6 +481,13 @@
+@@ -479,6 +480,13 @@
      }
    }
  
