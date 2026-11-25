@@ -66,6 +66,14 @@
      "$root_out_dir/locales/en-US.pak",
      "$root_out_dir/setup.exe",
      "//chrome/tools/build/win/makecab.py",
+@@ -191,6 +192,7 @@
+   deps = [
+     ":chrome_runtime_deps",
+     ":setup_runtime_deps",
++    "//chrome:copy_flint_initial_preferences",
+     "//chrome",
+     "//chrome:chrome_dll",
+     "//chrome/browser/extensions/default_extensions",
 --- a/chrome/installer/mini_installer/chrome.release
 +++ b/chrome/installer/mini_installer/chrome.release
 @@ -28,6 +28,7 @@
