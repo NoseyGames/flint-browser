@@ -1,8 +1,8 @@
 --- a/services/network/public/cpp/features.h
 +++ b/services/network/public/cpp/features.h
-@@ -14,6 +14,8 @@
+@@ -18,6 +18,8 @@
+ COMPONENT_EXPORT(NETWORK_CPP_FLAGS_AND_SWITCHES) BASE_DECLARE_FEATURE(kNoCrossOriginReferrers);
  
- namespace network::features {
  
 +COMPONENT_EXPORT(NETWORK_CPP_FLAGS_AND_SWITCHES)
 +BASE_DECLARE_FEATURE(kFlintTrackerBlocking);
@@ -11,10 +11,10 @@
  COMPONENT_EXPORT(NETWORK_CPP_FLAGS_AND_SWITCHES)
 --- a/services/network/public/cpp/features.cc
 +++ b/services/network/public/cpp/features.cc
-@@ -15,6 +15,8 @@
- #include "net/base/mime_sniffer.h"
+@@ -23,6 +23,8 @@
+              "NoCrossOriginReferrers",
+              base::FEATURE_DISABLED_BY_DEFAULT);
  
- namespace network::features {
 +
 +BASE_FEATURE(kFlintTrackerBlocking, base::FEATURE_ENABLED_BY_DEFAULT);
  
@@ -22,7 +22,7 @@
  
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -141,6 +142,42 @@
+@@ -141,6 +141,42 @@
  
  namespace {
  
@@ -65,7 +65,7 @@
  BASE_FEATURE(kDelayedCookieNotification, base::FEATURE_DISABLED_BY_DEFAULT);
  
  // Cannot use 0, because this means "default" in
-@@ -553,6 +590,15 @@
+@@ -553,6 +589,15 @@
          request.net_log_reference_info.value());
    }
  
@@ -81,7 +81,7 @@
    // Resolve elements from request_body and prepare upload data.
    if (request.request_body.get()) {
      OpenFilesForUpload(request);
-@@ -780,6 +826,12 @@
+@@ -780,6 +825,12 @@
      const std::optional<GURL>& new_url) {
    if (!deferred_redirect_url_) {
      NOTREACHED();
@@ -96,7 +96,7 @@
    // Note: There are some ordering dependencies here.
 --- a/chrome/browser/about_flags.cc
 +++ b/chrome/browser/about_flags.cc
-@@ -5402,6 +5402,9 @@
+@@ -5411,6 +5411,9 @@
      {switches::kEnableBenchmarking, flag_descriptions::kEnableBenchmarkingName,
       flag_descriptions::kEnableBenchmarkingDescription, kOsAll,
       MULTI_VALUE_TYPE(kEnableBenchmarkingChoices)},

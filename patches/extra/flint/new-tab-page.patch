@@ -146,7 +146,7 @@
  #include "content/public/browser/web_contents.h"
  #include "ui/color/color_provider.h"
  #include "ui/gfx/color_utils.h"
-@@ -45,6 +54,42 @@
+@@ -45,6 +54,43 @@
  
  NewTabPageThirdPartyHandler::~NewTabPageThirdPartyHandler() {
    ThemeServiceFactory::GetForProfile(profile_)->RemoveObserver(this);
@@ -173,6 +173,7 @@
 +  params.transition_type = ui::PAGE_TRANSITION_GENERATED;
 +  if (!post.second.empty()) {
 +    params.load_type = content::NavigationController::LOAD_TYPE_HTTP_POST;
++    params.is_form_submission = true;
 +    params.post_data = network::ResourceRequestBody::CreateFromCopyOfBytes(
 +        base::as_byte_span(post.second));
 +    params.post_content_type = post.first;
