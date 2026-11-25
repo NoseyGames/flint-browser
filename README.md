@@ -1,4 +1,27 @@
-# ungoogled-chromium
+# Flint Browser
+
+Flint is a Windows x64 distribution of ungoogled Chromium. It pairs native Chromium windows, tabs and DevTools with a dark Flint profile, a local obsidian new tab, and a toolbar control for third-party tracker blocking.
+
+## Run Flint on Windows
+
+From the repository root in PowerShell, build the launcher and open the browser:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\flint\windows\Build-Flint.ps1
+.\Flint.exe
+```
+
+The build uses the Windows .NET Framework compiler and downloads a pinned x64 archive from [ungoogled-chromium-windows](https://github.com/ungoogled-software/ungoogled-chromium-windows/releases). It verifies the archive's SHA-256 before extraction. A fresh profile opens the upstream welcome page once. Press **Ctrl+T** for Flint and choose **Keep it** if Chromium asks about your new-tab preference. For subsequent launches, open `Flint.exe` or pass it an `https://` address. Keep the executable beside the `flint` folder. Chromium uses commas to separate extension paths, so use a folder path without commas.
+
+To produce a self-contained distribution, pass `-Package` to the build script. Extract `build/Flint-Windows-x64.zip` before opening `Flint.exe`. The archive includes the engine and local interface assets.
+
+Flint keeps its browsing data under `%LOCALAPPDATA%\Flint\User Data`. Initial preferences apply once. Use Chromium Settings to adjust privacy, performance, and appearance, and the Flint toolbar action to inspect or toggle its bundled domain list. The list applies to third-party subrequests in windows where the extension is enabled. For private windows, turn on **Allow in Incognito** in the Flint extension's details.
+
+Fresh profiles use DuckDuckGo for search, block third-party cookies and notification prompts, enable HTTPS-First and balanced Memory Saver, and disable remote search suggestions and page preloading. Pinned sites stay in the local profile. The new tab loads its artwork, styles and scripts from disk.
+
+The Windows engine is the upstream prebuilt binary. Some native dialogs, the taskbar, and `chrome://version` identify it as Chromium. Engine updates require a new pinned archive and digest in `flint/windows/Install-Runtime.ps1` and a launcher rebuild.
+
+## Upstream ungoogled-chromium
 
 *A lightweight approach to removing Google web service dependency*
 

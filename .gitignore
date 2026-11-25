@@ -11,3 +11,5 @@ __pycache__/
 
 # Ignore optional build / cache directory
 /build
+/Flint.exe
+/flint/extension/_metadata/

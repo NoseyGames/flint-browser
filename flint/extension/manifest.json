@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Flint",
+  "version": "1.0.0",
+  "description": "Flint’s local start page and privacy controls.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAl1A+wk3oAeH5bUIkmt1mLZg5o5h+lqMTbmrr4ADEhoIJLyThJbv28V5FlxIhwJ5xsrMydEO3aLCbcx+2ljwGANSCrqCYZElt35Y32iDT3u683APQuQRbTrzcaI41b64jagJ4Ky0JfxZ0am+y3ceBTegW1z4vu4pIqGaRLKzrCfpX3rtyL+cmG6R0mXQ/Pr3BUubPch0Pg6jWC7VTTSM8Bf+EX+g5qn3uvgfvC4PCmCcjXz5wHWQSAmdZZDgsy71jLd2b3ZWC9jX4/8vNNieOR6Xv0iNoVaWiOjnSQcmPB8JFSMOu+8vOOVQRORaH4tYoXT1vYl35HKJSBnTIQy7h/QIDAQAB",
+  "permissions": ["search", "declarativeNetRequest"],
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'none'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+  },
+  "chrome_url_overrides": { "newtab": "newtab.html" },
+  "action": {
+    "default_title": "Flint privacy",
+    "default_popup": "privacy/popup.html",
+    "default_icon": { "16": "icons/flint-16.png", "32": "icons/flint-32.png" }
+  },
+  "icons": {
+    "16": "icons/flint-16.png",
+    "32": "icons/flint-32.png",
+    "48": "icons/flint-48.png",
+    "128": "icons/flint-128.png"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      { "id": "flint_trackers", "enabled": true, "path": "privacy/trackers.json" }
+    ]
+  }
+}

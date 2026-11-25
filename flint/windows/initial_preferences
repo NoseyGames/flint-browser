@@ -1,0 +1,37 @@
+{
+  "browser": {
+    "theme": {
+      "color_scheme2": 2,
+      "is_grayscale2": true,
+      "follows_system_colors": false
+    }
+  },
+  "profile": {
+    "name": "Flint",
+    "cookie_controls_mode": 1,
+    "default_content_setting_values": { "notifications": 2 }
+  },
+  "extensions": {
+    "pinned_extensions": ["pfodidmbcbclkiljfmoodkacljglmomp"]
+  },
+  "https_only_mode_enabled": true,
+  "net": { "network_prediction_options": 2 },
+  "search": { "suggest_enabled": false },
+  "default_search_provider_data": {
+    "template_url_data": {
+      "short_name": "DuckDuckGo",
+      "keyword": "duckduckgo.com",
+      "url": "https://duckduckgo.com/?q={searchTerms}",
+      "prepopulate_id": 92,
+      "synced_guid": "485bf7d3-0215-45af-87dc-538868000092",
+      "input_encodings": ["UTF-8"]
+    }
+  },
+  "distribution": {
+    "skip_first_run_ui": true,
+    "make_chrome_default": false,
+    "do_not_create_desktop_shortcut": true,
+    "do_not_create_quick_launch_shortcut": true,
+    "do_not_create_taskbar_shortcut": true
+  }
+}

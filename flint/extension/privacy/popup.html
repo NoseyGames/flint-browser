@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="dark">
+  <title>Flint privacy</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="popup.js" defer></script>
+</head>
+<body>
+  <header><img src="../icons/flint-32.png" width="22" height="22" alt=""><span>Flint</span></header>
+  <main>
+    <h1>Privacy</h1>
+    <div class="control">
+      <label for="blocking">Block known trackers</label>
+      <input type="checkbox" role="switch" id="blocking" aria-describedby="scope" disabled>
+    </div>
+    <p id="scope">Applies to third-party requests across all sites. Reload an open page to apply your change there.</p>
+    <details><summary>Covered domains</summary><ul id="domains"></ul></details>
+    <p id="status" role="status"></p>
+  </main>
+  <footer><button id="settings" type="button">Browser privacy settings <span aria-hidden="true">↗</span></button></footer>
+</body>
+</html>

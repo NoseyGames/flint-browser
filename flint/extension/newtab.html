@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>New tab</title>
+  <link rel="icon" href="icons/flint-32.png">
+  <link rel="stylesheet" href="newtab.css">
+  <script defer src="newtab.js"></script>
+</head>
+<body>
+  <svg class="symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4.5 4.5"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-add" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><g fill="currentColor" stroke="none"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></g></symbol>
+    <symbol id="i-privacy" viewBox="0 0 24 24"><path d="M12 3 20 6v6.5c0 3.6-3.9 6.7-8 8.5-4.1-1.8-8-4.9-8-8.5V6Z"/><path d="M12 7v9"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 11A8.5 8.5 0 1 1 6 18M3 5v6h6m3-4v5l3 2"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 17v3h16v-3"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><path d="m3 8 9-5 9 5H3Zm1 12h16M5 17h14M7 10v5m5-5v5m5-5v5"/></symbol>
+  </svg>
+
+  <main class="page">
+    <div class="surface">
+      <div class="art" aria-hidden="true"></div>
+      <header>
+        <div class="wordmark"><img src="icons/flint-48.png" alt="" width="32" height="32">Flint</div>
+        <nav aria-label="Browser tools">
+          <button type="button" class="tool" data-page="history" aria-label="History" title="History"><svg><use href="#i-history"/></svg></button>
+          <button type="button" class="tool" data-page="downloads" aria-label="Downloads" title="Downloads"><svg><use href="#i-download"/></svg></button>
+          <span class="divider" aria-hidden="true"></span>
+          <button type="button" class="tool privacy" id="privacy"><svg><use href="#i-privacy"/></svg>Privacy</button>
+        </nav>
+      </header>
+
+      <section class="launch" aria-labelledby="title">
+        <time id="date"></time>
+        <h1 id="title">New tab</h1>
+        <form class="search" id="search" role="search" autocomplete="off">
+          <svg class="search-mark" aria-hidden="true"><use href="#i-search"/></svg>
+          <input type="text" inputmode="search" id="query" aria-label="Search the web or enter a URL" placeholder="Search the web or enter a URL" autocapitalize="off" spellcheck="false" dir="auto" required>
+          <button id="clear" class="clear" type="button" hidden aria-label="Clear search" title="Clear search"><svg><use href="#i-close"/></svg></button>
+          <button class="go" aria-label="Go" title="Go"><svg><use href="#i-arrow"/></svg></button>
+        </form>
+        <p class="error" id="search-error" role="alert" hidden></p>
+      </section>
+    </div>
+
+    <section class="pins" aria-labelledby="pins-title">
+      <div class="pins-head"><h2 id="pins-title">Pinned sites</h2><button id="add" type="button"><svg aria-hidden="true"><use href="#i-add"/></svg>Add site</button></div>
+      <ul id="sites"></ul>
+      <p class="empty" id="empty" hidden>Your pinned sites appear here.</p>
+      <p class="error" id="site-error" role="alert" hidden></p>
+    </section>
+  </main>
+
+  <dialog id="editor" aria-labelledby="editor-title">
+    <form id="site-form" autocomplete="off">
+      <div class="dialog-head"><h2 id="editor-title">Add site</h2><button class="tool" type="button" id="close" aria-label="Cancel"><svg><use href="#i-close"/></svg></button></div>
+      <label for="site-name">Name</label>
+      <input id="site-name" type="text" maxlength="80" placeholder="Site name" required autofocus>
+      <label for="site-url">Web address</label>
+      <input id="site-url" type="text" inputmode="url" placeholder="example.com" spellcheck="false" autocapitalize="none" required>
+      <p class="error" id="editor-error" role="alert" hidden></p>
+      <div class="dialog-actions">
+        <button id="remove" type="button" hidden>Remove</button>
+        <button id="cancel" type="button">Cancel</button>
+        <button class="primary" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+  <template id="site-template">
+    <li>
+      <a class="site" dir="auto"><span class="monogram" aria-hidden="true"></span><span class="site-label"><strong></strong><small></small></span></a>
+      <button class="edit" type="button"><svg aria-hidden="true"><use href="#i-more"/></svg></button>
+    </li>
+  </template>
+</body>
+</html>
