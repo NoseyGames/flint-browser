@@ -1,18 +1,23 @@
 name: Compile Flint Windows x64
 on:
   workflow_dispatch:
-  push:
-    branches: [codex/flint-native]
+    inputs:
+      resume_webui_checkpoint:
+        description: Resume the verified stage 5 checkpoint for a WebUI-only correction
+        type: boolean
+        default: false
 permissions:
+  actions: read
   contents: read
 concurrency:
   group: flint-windows-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  cancel-in-progress: false
 jobs:
   stage-1:
     uses: ./.github/workflows/flint-stage.yml
     with:
       resume: false
+      recover_webui: ${{ inputs.resume_webui_checkpoint }}
   stage-2:
     needs: stage-1
     if: needs.stage-1.outputs.finished == 'false'
@@ -105,7 +110,7 @@ jobs:
       resume: true
   verify-package:
     needs: [stage-1, stage-2, stage-3, stage-4, stage-5, stage-6, stage-7, stage-8, stage-9, stage-10, stage-11, stage-12, stage-13, stage-14, stage-15, stage-16]
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4

@@ -14,6 +14,9 @@ $browser = $binaries[0]
 $info = $browser.VersionInfo
 if ($info.ProductName -notmatch 'Flint') { throw "Unexpected native product identity: $($info.ProductName)" }
 if (!(Test-Path -LiteralPath (Join-Path $browser.DirectoryName 'chrome.dll') -PathType Leaf)) { throw 'Missing Chromium engine.' }
+$art = Join-Path $PSScriptRoot '..\native\brand\mark-32.png'
+python (Join-Path $PSScriptRoot 'verify-native-icon.py') $art $browser.FullName (Join-Path $browser.DirectoryName 'chrome.dll')
+if ($LASTEXITCODE -ne 0) { throw 'The native browser icon differs from Flint artwork.' }
 
 # Exercise the packaged binary with extensions disabled. The browser's own
 # new-tab entry point must still deliver Flint's HTML from compiled resources.
